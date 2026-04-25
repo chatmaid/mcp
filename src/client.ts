@@ -5,23 +5,72 @@ export interface ChatmaidClientOptions {
   baseUrl?: string;
 }
 
-export interface ChatmaidError {
-  type?: string;
-  code?: string;
-  message?: string;
-  hint?: string;
+export interface ChatmaidErrorEnvelope {
+  success: false;
+  error: string;
+  message: string[];
+  statusCode: number;
+  timestamp?: string;
+  path?: string;
+  retryAfter?: number;
 }
 
 export class ChatmaidApiError extends Error {
   public status: number;
-  public error?: ChatmaidError;
+  public envelope?: ChatmaidErrorEnvelope;
 
-  constructor(status: number, error?: ChatmaidError, fallback?: string) {
-    super(error?.message || fallback || `HTTP ${status}`);
+  constructor(status: number, envelope?: ChatmaidErrorEnvelope, fallback?: string) {
+    const summary =
+      envelope?.message && envelope.message.length > 0
+        ? envelope.message.join("; ")
+        : envelope?.error || fallback || `HTTP ${status}`;
+    super(summary);
     this.name = "ChatmaidApiError";
     this.status = status;
-    this.error = error;
+    this.envelope = envelope;
   }
+}
+
+export interface MessageResource {
+  id: string;
+  from: string;
+  to: string;
+  content: string | null;
+  mediaUrls: string[];
+  environment: "test" | "live";
+  status: "pending" | "sent" | "failed";
+  errorCode: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  sentAt: string | null;
+  failedAt: string | null;
+}
+
+export interface PhoneNumberResource {
+  id: string;
+  phoneNumber: string;
+  displayName: string | null;
+  environment: "test" | "live";
+  connectionStatus: "connected" | "disconnected" | "connecting";
+  lastConnectedAt: string | null;
+  lastDisconnectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface ApiSuccess<T> {
+  success: true;
+  data: T;
 }
 
 export class ChatmaidClient {
@@ -58,69 +107,78 @@ export class ChatmaidClient {
     const data = text ? safeJson(text) : null;
 
     if (!response.ok) {
-      const error = (data as { error?: ChatmaidError } | null)?.error;
-      throw new ChatmaidApiError(response.status, error, text);
+      const envelope = isErrorEnvelope(data) ? data : undefined;
+      throw new ChatmaidApiError(response.status, envelope, typeof text === "string" ? text : undefined);
     }
 
     return data as T;
   }
 
   sendMessage(input: {
-    from: string;
+    fromPhoneId: string;
     to: string;
-    content: string;
+    content?: string;
+    mediaUrls?: string[];
     idempotencyKey?: string;
   }) {
-    return this.request<{ success: boolean; data: { messageId: string; status: string; createdAt: string } }>(
-      "POST",
-      "/v1/messages/send",
-      input,
-    );
+    return this.request<ApiSuccess<MessageResource>>("POST", "/v1/messages/send", input);
   }
 
-  listMessages(params: { limit?: number; status?: string; phoneNumberId?: string } = {}) {
+  listMessages(params: {
+    page?: number;
+    limit?: number;
+    status?: "pending" | "sent" | "failed";
+    phoneNumberId?: string;
+  } = {}) {
     const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
     if (params.limit) qs.set("limit", String(params.limit));
     if (params.status) qs.set("status", params.status);
     if (params.phoneNumberId) qs.set("phoneNumberId", params.phoneNumberId);
     const query = qs.toString();
-    return this.request<{ success: boolean; data: unknown[] }>(
+    return this.request<ApiSuccess<PaginatedResponse<MessageResource>>>(
       "GET",
       `/v1/messages${query ? `?${query}` : ""}`,
     );
   }
 
   getMessage(messageId: string) {
-    return this.request<{ success: boolean; data: unknown }>(
+    return this.request<ApiSuccess<MessageResource>>(
       "GET",
       `/v1/messages/${encodeURIComponent(messageId)}`,
     );
   }
 
   listPhoneNumbers() {
-    return this.request<{ success: boolean; data: unknown[] }>("GET", "/v1/phone-numbers");
+    return this.request<ApiSuccess<PhoneNumberResource[]>>("GET", "/v1/phone-numbers");
   }
 
-  getPhoneNumber(id: string) {
-    return this.request<{ success: boolean; data: unknown }>(
+  getPhoneNumber(idOrE164: string) {
+    return this.request<ApiSuccess<PhoneNumberResource>>(
       "GET",
-      `/v1/phone-numbers/${encodeURIComponent(id)}`,
+      `/v1/phone-numbers/${encodeURIComponent(idOrE164)}`,
     );
   }
 
-  getPhoneStatus(id: string) {
-    return this.request<{ success: boolean; data: unknown }>(
+  getPhoneStatus(idOrE164: string) {
+    return this.request<ApiSuccess<Pick<PhoneNumberResource, "id" | "phoneNumber" | "connectionStatus" | "lastConnectedAt" | "lastDisconnectedAt" | "updatedAt">>>(
       "GET",
-      `/v1/phone-numbers/${encodeURIComponent(id)}/status`,
+      `/v1/phone-numbers/${encodeURIComponent(idOrE164)}/status`,
     );
   }
 
   getAccount() {
-    return this.request<{ success: boolean; data: unknown }>("GET", "/v1/account");
+    return this.request<ApiSuccess<unknown>>("GET", "/v1/account");
   }
 
-  getUsage() {
-    return this.request<{ success: boolean; data: unknown }>("GET", "/v1/account/usage");
+  getUsage(params: { period?: "day" | "week" | "month" } = {}) {
+    const qs = new URLSearchParams();
+    if (params.period) qs.set("period", params.period);
+    const query = qs.toString();
+    return this.request<ApiSuccess<unknown>>(
+      "GET",
+      `/v1/account/usage${query ? `?${query}` : ""}`,
+    );
   }
 }
 
@@ -130,4 +188,10 @@ function safeJson(text: string) {
   } catch {
     return text;
   }
+}
+
+function isErrorEnvelope(value: unknown): value is ChatmaidErrorEnvelope {
+  if (!value || typeof value !== "object") return false;
+  const obj = value as Record<string, unknown>;
+  return obj.success === false && typeof obj.error === "string";
 }

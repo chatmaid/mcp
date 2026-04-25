@@ -59,14 +59,14 @@ Get a key at <https://developers.chatmaid.net/dashboard/api-keys>.
 
 | Tool                 | Description                                                                 |
 | -------------------- | --------------------------------------------------------------------------- |
-| `send_message`       | Send a WhatsApp message (`from`, `to` in E.164, `content`, optional `idempotencyKey`). |
-| `list_messages`      | List recent messages, optionally filtered by status or phone number.        |
-| `get_message`        | Fetch a message by ID, including final status.                              |
-| `list_phone_numbers` | List phone numbers connected to the account.                                |
-| `get_phone_number`   | Get details for a single phone number.                                      |
-| `get_phone_status`   | Check if a phone number is currently connected to WhatsApp.                 |
-| `get_account`        | Get current account info.                                                   |
-| `get_usage`          | Get current usage stats and remaining quota.                                |
+| `send_message`       | Send a WhatsApp message: `fromPhoneId` (use `list_phone_numbers` to find), `to` in E.164, plus `content` and/or `mediaUrls`, optional `idempotencyKey`. |
+| `list_messages`      | List recent messages, optionally filtered by `status`, `phoneNumberId`, with `page`/`limit` pagination. |
+| `get_message`        | Fetch a message by ID, including final status and timestamps.               |
+| `list_phone_numbers` | List phone numbers registered to the account (scoped to your API key environment). |
+| `get_phone_number`   | Get details for a single phone number. Accepts internal ID or E.164.        |
+| `get_phone_status`   | Check if a phone number is currently connected to WhatsApp. Accepts internal ID or E.164. |
+| `get_account`        | Get current account info (accountId, name, email, subscription status).     |
+| `get_usage`          | Get usage stats for `period` = `day` \| `week` \| `month` (defaults to month). |
 
 ## Example prompts
 
