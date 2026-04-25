@@ -30,11 +30,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chatmaid/chatmaid-mcp"
+    "url": "https://github.com/chatmaid/mcp"
   },
   "homepage": "https://developers.chatmaid.net/docs/mcp",
   "bugs": {
-    "url": "https://github.com/chatmaid/chatmaid-mcp/issues"
+    "url": "https://github.com/chatmaid/mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",

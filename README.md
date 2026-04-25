@@ -86,7 +86,7 @@ The agent will call the right tool automatically.
 
 ## Source
 
-Open-source at [github.com/chatmaid/chatmaid-mcp](https://github.com/chatmaid/chatmaid-mcp). PRs welcome.
+Open-source at [github.com/chatmaid/mcp](https://github.com/chatmaid/mcp). PRs welcome.
 
 ## License
 
