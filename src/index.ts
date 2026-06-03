@@ -66,7 +66,7 @@ const listMessagesSchema = z.object({
     .optional()
     .describe("Items per page. Defaults to 20, max 100."),
   status: z
-    .enum(["pending", "sent", "failed"])
+    .enum(["pending", "sent", "delivered", "read", "failed"])
     .optional()
     .describe("Filter by message status."),
   phoneNumberId: z
@@ -77,6 +77,32 @@ const listMessagesSchema = z.object({
 
 const getMessageSchema = z.object({
   messageId: z.string().describe("The message ID returned from send_message (e.g. msg_abc123)."),
+});
+
+const listInboundMessagesSchema = z.object({
+  page: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Page number (1-based). Defaults to 1."),
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .optional()
+    .describe("Items per page. Defaults to 20, max 100."),
+  phoneNumberId: z
+    .string()
+    .optional()
+    .describe("Only return messages received by this phone number ID."),
+});
+
+const getInboundMessageSchema = z.object({
+  messageId: z
+    .string()
+    .describe("The inbound message ID (e.g. inmsg_abc123)."),
 });
 
 const phoneRefSchema = z.object({
@@ -143,7 +169,7 @@ const tools: Tool[] = [
         limit: { type: "number", description: "Items per page. Defaults to 20, max 100." },
         status: {
           type: "string",
-          enum: ["pending", "sent", "failed"],
+          enum: ["pending", "sent", "delivered", "read", "failed"],
           description: "Filter by message status.",
         },
         phoneNumberId: {
@@ -156,13 +182,44 @@ const tools: Tool[] = [
   {
     name: "get_message",
     description:
-      "Fetch a single message by ID, including final delivery status and timestamps (createdAt, sentAt, failedAt).",
+      "Fetch a single message by ID, including final delivery status and timestamps (createdAt, sentAt, deliveredAt, readAt, failedAt).",
     inputSchema: {
       type: "object",
       properties: {
         messageId: {
           type: "string",
           description: "The message ID returned from send_message (e.g. msg_abc123).",
+        },
+      },
+      required: ["messageId"],
+    },
+  },
+  {
+    name: "list_inbound_messages",
+    description:
+      "List WhatsApp messages received by the account's connected phone numbers (live environment only; sandbox keys always get an empty list). Supports offset/limit pagination and filtering by receiving phone number ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        page: { type: "number", description: "Page number (1-based). Defaults to 1." },
+        limit: { type: "number", description: "Items per page. Defaults to 20, max 100." },
+        phoneNumberId: {
+          type: "string",
+          description: "Only return messages received by this phone number ID.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_inbound_message",
+    description:
+      "Fetch a single inbound (received) message by ID, including sender, content, type, and receivedAt timestamp.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        messageId: {
+          type: "string",
+          description: "The inbound message ID (e.g. inmsg_abc123).",
         },
       },
       required: ["messageId"],
@@ -270,6 +327,10 @@ async function dispatch(name: string, args: Record<string, unknown>): Promise<un
       return client.listMessages(listMessagesSchema.parse(args));
     case "get_message":
       return client.getMessage(getMessageSchema.parse(args).messageId);
+    case "list_inbound_messages":
+      return client.listInboundMessages(listInboundMessagesSchema.parse(args));
+    case "get_inbound_message":
+      return client.getInboundMessage(getInboundMessageSchema.parse(args).messageId);
     case "list_phone_numbers":
       return client.listPhoneNumbers();
     case "get_phone_number":

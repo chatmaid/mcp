@@ -38,12 +38,35 @@ export interface MessageResource {
   content: string | null;
   mediaUrls: string[];
   environment: "test" | "live";
-  status: "pending" | "sent" | "failed";
+  status: "pending" | "sent" | "delivered" | "read" | "failed";
   errorCode: string | null;
   errorMessage: string | null;
   createdAt: string;
   sentAt: string | null;
+  deliveredAt: string | null;
+  readAt: string | null;
   failedAt: string | null;
+}
+
+export interface InboundMessageResource {
+  id: string;
+  from: string;
+  to: string;
+  content: string | null;
+  type:
+    | "text"
+    | "image"
+    | "video"
+    | "audio"
+    | "document"
+    | "sticker"
+    | "location"
+    | "contact"
+    | "other";
+  isGroup: boolean;
+  groupId: string | null;
+  receivedAt: string;
+  createdAt: string;
 }
 
 export interface PhoneNumberResource {
@@ -127,7 +150,7 @@ export class ChatmaidClient {
   listMessages(params: {
     page?: number;
     limit?: number;
-    status?: "pending" | "sent" | "failed";
+    status?: "pending" | "sent" | "delivered" | "read" | "failed";
     phoneNumberId?: string;
   } = {}) {
     const qs = new URLSearchParams();
@@ -146,6 +169,29 @@ export class ChatmaidClient {
     return this.request<ApiSuccess<MessageResource>>(
       "GET",
       `/v1/messages/${encodeURIComponent(messageId)}`,
+    );
+  }
+
+  listInboundMessages(params: {
+    page?: number;
+    limit?: number;
+    phoneNumberId?: string;
+  } = {}) {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.limit) qs.set("limit", String(params.limit));
+    if (params.phoneNumberId) qs.set("phoneNumberId", params.phoneNumberId);
+    const query = qs.toString();
+    return this.request<ApiSuccess<PaginatedResponse<InboundMessageResource>>>(
+      "GET",
+      `/v1/messages/inbound${query ? `?${query}` : ""}`,
+    );
+  }
+
+  getInboundMessage(messageId: string) {
+    return this.request<ApiSuccess<InboundMessageResource>>(
+      "GET",
+      `/v1/messages/inbound/${encodeURIComponent(messageId)}`,
     );
   }
 
