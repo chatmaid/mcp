@@ -287,7 +287,7 @@ const tools: Tool[] = [
 
 // ---- Server --------------------------------------------------------------
 const server = new Server(
-  { name: "chatmaid-mcp", version: "0.1.0" },
+  { name: "chatmaid-mcp", version: "0.2.0" },
   { capabilities: { tools: {} } },
 );
 
