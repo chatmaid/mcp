@@ -31,7 +31,9 @@ const sendMessageSchema = z
       ),
     to: z
       .string()
-      .describe("Recipient phone number in E.164 format (e.g. +14155559876)."),
+      .describe(
+        "Recipient: a phone number in E.164 format (e.g. +14155559876), or a WhatsApp group JID (e.g. 120363043211234567@g.us) as returned by list_groups or the groupId of an inbound group message.",
+      ),
     content: z
       .string()
       .max(4096)
@@ -113,6 +115,14 @@ const phoneRefSchema = z.object({
     ),
 });
 
+const listGroupsSchema = z.object({
+  fromPhoneId: z
+    .string()
+    .describe(
+      "Sender phone whose groups to list: either the phone's internal ID or its E.164 number.",
+    ),
+});
+
 const getUsageSchema = z.object({
   period: z
     .enum(["day", "week", "month"])
@@ -125,7 +135,7 @@ const tools: Tool[] = [
   {
     name: "send_message",
     description:
-      "Send a WhatsApp message via Chatmaid from one of the account's connected phones. Returns the full message resource (`id`, `status`, timestamps). Use list_phone_numbers first to find a valid `fromPhoneId`.",
+      "Send a WhatsApp message via Chatmaid from one of the account's connected phones, to an individual (E.164 phone number) or to a WhatsApp group (group JID from list_groups). Returns the full message resource (`id`, `status`, timestamps). Use list_phone_numbers first to find a valid `fromPhoneId`.",
     inputSchema: {
       type: "object",
       properties: {
@@ -136,7 +146,8 @@ const tools: Tool[] = [
         },
         to: {
           type: "string",
-          description: "Recipient phone number in E.164 format (e.g. +14155559876).",
+          description:
+            "Recipient: a phone number in E.164 format (e.g. +14155559876), or a WhatsApp group JID (e.g. 120363043211234567@g.us) as returned by list_groups or the groupId of an inbound group message.",
         },
         content: {
           type: "string",
@@ -226,6 +237,22 @@ const tools: Tool[] = [
     },
   },
   {
+    name: "list_groups",
+    description:
+      "List the WhatsApp groups a connected phone can post to. Each group's `id` is a full group JID (e.g. 120363043211234567@g.us) that can be used as `to` in send_message. Sandbox (sk_test_) keys get a static sandbox list.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fromPhoneId: {
+          type: "string",
+          description:
+            "Sender phone whose groups to list: either the phone's internal ID or its E.164 number.",
+        },
+      },
+      required: ["fromPhoneId"],
+    },
+  },
+  {
     name: "list_phone_numbers",
     description:
       "List all phone numbers registered to the current Chatmaid account (scoped to the API key's environment). Returned `id` values are valid `fromPhoneId` arguments for send_message.",
@@ -287,7 +314,7 @@ const tools: Tool[] = [
 
 // ---- Server --------------------------------------------------------------
 const server = new Server(
-  { name: "chatmaid-mcp", version: "0.2.0" },
+  { name: "chatmaid-mcp", version: "0.3.0" },
   { capabilities: { tools: {} } },
 );
 
@@ -331,6 +358,8 @@ async function dispatch(name: string, args: Record<string, unknown>): Promise<un
       return client.listInboundMessages(listInboundMessagesSchema.parse(args));
     case "get_inbound_message":
       return client.getInboundMessage(getInboundMessageSchema.parse(args).messageId);
+    case "list_groups":
+      return client.listGroups(listGroupsSchema.parse(args));
     case "list_phone_numbers":
       return client.listPhoneNumbers();
     case "get_phone_number":

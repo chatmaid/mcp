@@ -35,6 +35,8 @@ export interface MessageResource {
   id: string;
   from: string;
   to: string;
+  isGroup: boolean;
+  groupId: string | null;
   content: string | null;
   mediaUrls: string[];
   environment: "test" | "live";
@@ -79,6 +81,12 @@ export interface PhoneNumberResource {
   lastDisconnectedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GroupResource {
+  id: string; // Full group JID (…@g.us) — valid `to` for send_message
+  name: string;
+  isCommunityAnnounce: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -192,6 +200,14 @@ export class ChatmaidClient {
     return this.request<ApiSuccess<InboundMessageResource>>(
       "GET",
       `/v1/messages/inbound/${encodeURIComponent(messageId)}`,
+    );
+  }
+
+  listGroups(params: { fromPhoneId: string }) {
+    const qs = new URLSearchParams({ fromPhoneId: params.fromPhoneId });
+    return this.request<ApiSuccess<GroupResource[]>>(
+      "GET",
+      `/v1/groups?${qs.toString()}`,
     );
   }
 

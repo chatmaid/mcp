@@ -59,7 +59,8 @@ Get a key at <https://developers.chatmaid.net/dashboard/api-keys>.
 
 | Tool                 | Description                                                                 |
 | -------------------- | --------------------------------------------------------------------------- |
-| `send_message`       | Send a WhatsApp message: `fromPhoneId` (use `list_phone_numbers` to find), `to` in E.164, plus `content` and/or `mediaUrls`, optional `idempotencyKey`. |
+| `send_message`       | Send a WhatsApp message: `fromPhoneId` (use `list_phone_numbers` to find), `to` as an E.164 number or a group JID (from `list_groups`), plus `content` and/or `mediaUrls`, optional `idempotencyKey`. |
+| `list_groups`        | List the WhatsApp groups a connected phone can post to; returned `id` values are group JIDs usable as `to` in `send_message`. |
 | `list_messages`      | List recent messages, optionally filtered by `status`, `phoneNumberId`, with `page`/`limit` pagination. |
 | `get_message`        | Fetch a message by ID, including final status and timestamps.               |
 | `list_inbound_messages` | List messages received by your connected phone numbers (live only), optionally filtered by `phoneNumberId`, with `page`/`limit` pagination. |
