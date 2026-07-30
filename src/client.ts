@@ -31,6 +31,19 @@ export class ChatmaidApiError extends Error {
   }
 }
 
+/** Stable error codes returned on a failed message (present when status is "failed"). */
+export type MessageErrorCode =
+  | "NOT_CONNECTED"
+  | "INVALID_RECIPIENT"
+  | "RECIPIENT_NOT_REACHABLE"
+  | "NOT_GROUP_MEMBER"
+  | "RATE_LIMITED"
+  | "NOT_AUTHORIZED"
+  | "MEDIA_ERROR"
+  | "TIMEOUT"
+  | "SERVICE_UNAVAILABLE"
+  | "INTERNAL_ERROR";
+
 export interface MessageResource {
   id: string;
   from: string;
@@ -41,7 +54,7 @@ export interface MessageResource {
   mediaUrls: string[];
   environment: "test" | "live";
   status: "pending" | "sent" | "delivered" | "read" | "failed";
-  errorCode: string | null;
+  errorCode: MessageErrorCode | null;
   errorMessage: string | null;
   createdAt: string;
   sentAt: string | null;
