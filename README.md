@@ -1,6 +1,6 @@
 # @chatmaid/mcp
 
-MCP server for the [Chatmaid WhatsApp Developers API](https://developers.chatmaid.net). Send WhatsApp messages and manage your account from Claude Code, Cursor, Windsurf, Claude Desktop, and any other MCP-compatible AI client.
+MCP server for the [Chatmaid WhatsApp Developers API](https://www.chatmaid.net/developers). Send WhatsApp messages and manage your account from Claude Code, Cursor, Windsurf, Claude Desktop, and any other MCP-compatible AI client.
 
 ## Install
 
