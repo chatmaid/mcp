@@ -12,14 +12,16 @@ import { ChatmaidApiError, ChatmaidClient } from "./client.js";
 const apiKey = process.env.CHATMAID_API_KEY ?? process.env.CHATMAID_KEY;
 const baseUrl = process.env.CHATMAID_BASE_URL;
 
+// Without a key the server still starts and lists its tools (MCP directories
+// introspect servers that way); each tool call then returns the error instead.
+const missingKeyMessage =
+  "CHATMAID_API_KEY is required. Set it in your MCP client config (e.g. claude_desktop_config.json). Generate one at https://developers.chatmaid.net/dashboard/api-keys";
+
 if (!apiKey) {
-  console.error(
-    "[chatmaid-mcp] CHATMAID_API_KEY is required. Set it in your MCP client config (e.g. claude_desktop_config.json).",
-  );
-  process.exit(1);
+  console.error(`[chatmaid-mcp] ${missingKeyMessage}`);
 }
 
-const client = new ChatmaidClient({ apiKey, baseUrl });
+const client = apiKey ? new ChatmaidClient({ apiKey, baseUrl }) : null;
 
 // ---- Tool schemas ------------------------------------------------------
 const sendMessageSchema = z
@@ -134,6 +136,7 @@ const getUsageSchema = z.object({
 const tools: Tool[] = [
   {
     name: "send_message",
+    annotations: { title: "Send WhatsApp message", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     description:
       "Send a WhatsApp message via Chatmaid from one of the account's connected phones, to an individual (E.164 phone number) or to a WhatsApp group (group JID from list_groups). Returns the full message resource (`id`, `status`, timestamps). Use list_phone_numbers first to find a valid `fromPhoneId`.",
     inputSchema: {
@@ -171,6 +174,7 @@ const tools: Tool[] = [
   },
   {
     name: "list_messages",
+    annotations: { title: "List sent messages", readOnlyHint: true, openWorldHint: false },
     description:
       "List recent WhatsApp messages with offset/limit pagination, optionally filtered by status or sender phone number ID. Response includes a `pagination` block.",
     inputSchema: {
@@ -192,6 +196,7 @@ const tools: Tool[] = [
   },
   {
     name: "get_message",
+    annotations: { title: "Get message", readOnlyHint: true, openWorldHint: false },
     description:
       "Fetch a single message by ID, including final delivery status and timestamps (createdAt, sentAt, deliveredAt, readAt, failedAt).",
     inputSchema: {
@@ -207,6 +212,7 @@ const tools: Tool[] = [
   },
   {
     name: "list_inbound_messages",
+    annotations: { title: "List received messages", readOnlyHint: true, openWorldHint: false },
     description:
       "List WhatsApp messages received by the account's connected phone numbers (live environment only; sandbox keys always get an empty list). Supports offset/limit pagination and filtering by receiving phone number ID.",
     inputSchema: {
@@ -223,6 +229,7 @@ const tools: Tool[] = [
   },
   {
     name: "get_inbound_message",
+    annotations: { title: "Get received message", readOnlyHint: true, openWorldHint: false },
     description:
       "Fetch a single inbound (received) message by ID, including sender, content, type, and receivedAt timestamp.",
     inputSchema: {
@@ -238,6 +245,7 @@ const tools: Tool[] = [
   },
   {
     name: "list_groups",
+    annotations: { title: "List WhatsApp groups", readOnlyHint: true, openWorldHint: false },
     description:
       "List the WhatsApp groups a connected phone can post to. Each group's `id` is a full group JID (e.g. 120363043211234567@g.us) that can be used as `to` in send_message. Sandbox (sk_test_) keys get a static sandbox list.",
     inputSchema: {
@@ -254,12 +262,14 @@ const tools: Tool[] = [
   },
   {
     name: "list_phone_numbers",
+    annotations: { title: "List phone numbers", readOnlyHint: true, openWorldHint: false },
     description:
       "List all phone numbers registered to the current Chatmaid account (scoped to the API key's environment). Returned `id` values are valid `fromPhoneId` arguments for send_message.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "get_phone_number",
+    annotations: { title: "Get phone number", readOnlyHint: true, openWorldHint: false },
     description:
       "Get details about a single registered phone number. Accepts either the internal phone ID or an E.164 number.",
     inputSchema: {
@@ -276,6 +286,7 @@ const tools: Tool[] = [
   },
   {
     name: "get_phone_status",
+    annotations: { title: "Get phone connection status", readOnlyHint: true, openWorldHint: false },
     description:
       "Check whether a phone number is currently connected to WhatsApp and ready to send. Accepts either the internal phone ID or an E.164 number.",
     inputSchema: {
@@ -292,11 +303,13 @@ const tools: Tool[] = [
   },
   {
     name: "get_account",
+    annotations: { title: "Get account", readOnlyHint: true, openWorldHint: false },
     description: "Get current account profile (accountId, name, email, subscriptionStatus, aggregate stats).",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "get_usage",
+    annotations: { title: "Get usage", readOnlyHint: true, openWorldHint: false },
     description:
       "Get usage stats for the account over a window (day, week, or month). Returns message and API request counters.",
     inputSchema: {
@@ -314,7 +327,7 @@ const tools: Tool[] = [
 
 // ---- Server --------------------------------------------------------------
 const server = new Server(
-  { name: "chatmaid-mcp", version: "0.3.0" },
+  { name: "chatmaid-mcp", version: "0.3.1" },
   { capabilities: { tools: {} } },
 );
 
@@ -347,6 +360,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 });
 
 async function dispatch(name: string, args: Record<string, unknown>): Promise<unknown> {
+  if (!client) throw new Error(missingKeyMessage);
   switch (name) {
     case "send_message":
       return client.sendMessage(sendMessageSchema.parse(args));

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chatmaid/mcp",
+  "title": "Chatmaid WhatsApp",
+  "description": "Send WhatsApp messages to contacts and groups, read replies, and check delivery via Chatmaid.",
+  "websiteUrl": "https://www.chatmaid.net/docs/mcp",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/chatmaid/mcp/main/assets/logo.png",
+      "mimeType": "image/png",
+      "sizes": ["400x400"]
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/chatmaid/mcp",
+    "source": "github"
+  },
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@chatmaid/mcp",
+      "version": "0.3.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "CHATMAID_API_KEY",
+          "description": "Chatmaid API key: sk_test_* for the sandbox (nothing is sent), sk_live_* for real messages",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "CHATMAID_BASE_URL",
+          "description": "Override the API base URL (defaults to https://developers-api.chatmaid.net)",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

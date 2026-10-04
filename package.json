@@ -1,6 +1,7 @@
 {
   "name": "@chatmaid/mcp",
-  "version": "0.3.0",
+  "mcpName": "io.github.chatmaid/mcp",
+  "version": "0.3.1",
   "description": "MCP server for the Chatmaid WhatsApp Developers API — send WhatsApp messages from Claude Code, Cursor, Windsurf, and any MCP-compatible agent.",
   "type": "module",
   "bin": {
@@ -9,7 +10,8 @@
   "main": "./dist/index.js",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
@@ -24,7 +26,11 @@
     "chatmaid",
     "claude",
     "cursor",
-    "ai-agents"
+    "ai-agents",
+    "mcp-server",
+    "whatsapp-api",
+    "whatsapp-automation",
+    "claude-desktop"
   ],
   "author": "Chatmaid",
   "license": "MIT",
@@ -32,7 +38,7 @@
     "type": "git",
     "url": "https://github.com/chatmaid/mcp"
   },
-  "homepage": "https://developers.chatmaid.net/docs/mcp",
+  "homepage": "https://www.chatmaid.net/docs/mcp",
   "bugs": {
     "url": "https://github.com/chatmaid/mcp/issues"
   },
